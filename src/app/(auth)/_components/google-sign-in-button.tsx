@@ -77,9 +77,11 @@ export function GoogleSignInButton({ next, label = "Continue with Google" }: { n
       setPending(false);
       const code = errorCode(err);
       if (code && SILENT_CODES.has(code)) return;
+      console.error("Google sign-in failed", code ?? err);
       if (code === "auth/popup-blocked") setError(POPUP_BLOCKED_ERROR);
       else if (code === "auth/network-request-failed") setError(NETWORK_ERROR);
-      else setError(GENERIC_ERROR);
+      // The Firebase code (e.g. auth/internal-error) is safe to show and tells support what went wrong.
+      else setError(code ? `${GENERIC_ERROR} (${code})` : GENERIC_ERROR);
     }
   }
 
