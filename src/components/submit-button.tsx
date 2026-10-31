@@ -1,9 +1,10 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
-/** Submit button that disables itself and shows `pendingText` while its parent form is submitting. */
+/** Submit button that disables itself and shows a spinner plus `pendingText` while its parent form is submitting. */
 export function SubmitButton({
   pendingText = "Saving…",
   children,
@@ -14,7 +15,14 @@ export function SubmitButton({
   const { pending } = useFormStatus();
   return (
     <Button type={type} disabled={pending || disabled} {...props}>
-      {pending ? pendingText : children}
+      {pending ? (
+        <>
+          <LoaderCircle className="animate-spin" />
+          {pendingText}
+        </>
+      ) : (
+        children
+      )}
     </Button>
   );
 }

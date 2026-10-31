@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-/** Server component. Keeps every other search param when building page links. */
+const PAGE_BTN = cn(buttonVariants({ variant: "outline", size: "sm" }), "aria-disabled:pointer-events-none aria-disabled:opacity-50");
+
+/** Server component. Keeps every other search param when building page links. Sits inside the table Card. */
 export function Pagination({
   page,
   total,
@@ -38,28 +41,44 @@ export function Pagination({
   const nextDisabled = page >= totalPages;
 
   return (
-    <div className="flex flex-col gap-3 pt-4 text-sm text-neutral-600 sm:flex-row sm:items-center sm:justify-between">
-      <span>{total === 0 ? "No results" : `${from}–${to} of ${total}`}</span>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-3 border-t border-border bg-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-[13px] text-muted-foreground">
+        {total === 0 ? (
+          "No results"
+        ) : (
+          <>
+            Showing{" "}
+            <span className="num font-medium text-foreground">
+              {from}–{to}
+            </span>{" "}
+            of <span className="num font-medium text-foreground">{total}</span>
+          </>
+        )}
+      </p>
+      <div className="flex items-center gap-1">
         {prevDisabled ? (
-          <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none opacity-50")}>
+          <span aria-disabled="true" className={PAGE_BTN}>
+            <ChevronLeft />
             Previous
           </span>
         ) : (
-          <Link href={hrefFor(page - 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link href={hrefFor(page - 1)} className={PAGE_BTN}>
+            <ChevronLeft />
             Previous
           </Link>
         )}
-        <span className="px-1">
-          Page {page} of {totalPages}
+        <span className="num px-3 text-[13px] text-muted-foreground">
+          Page {page} / {totalPages}
         </span>
         {nextDisabled ? (
-          <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none opacity-50")}>
+          <span aria-disabled="true" className={PAGE_BTN}>
             Next
+            <ChevronRight />
           </span>
         ) : (
-          <Link href={hrefFor(page + 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link href={hrefFor(page + 1)} className={PAGE_BTN}>
             Next
+            <ChevronRight />
           </Link>
         )}
       </div>
