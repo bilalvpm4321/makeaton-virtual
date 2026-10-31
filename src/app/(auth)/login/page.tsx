@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { envStatus } from "@/lib/env";
+import { GoogleSignInButton } from "../_components/google-sign-in-button";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Log in · Brightloop" };
@@ -16,6 +18,7 @@ export default async function LoginPage({
 }) {
   const { next, reset } = await searchParams;
   const nextPath = typeof next === "string" ? next : undefined;
+  const googleEnabled = envStatus().google;
 
   return (
     <div>
@@ -27,6 +30,8 @@ export default async function LoginPage({
           Your password has been updated. Log in with your new password.
         </p>
       ) : null}
+
+      {googleEnabled ? <GoogleSignInButton next={nextPath} /> : null}
 
       <LoginForm next={nextPath} />
 
