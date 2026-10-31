@@ -6,6 +6,7 @@
  *  - SEED_SCALE generated customers, each with one active monthly subscription and its billing history.
  *
  * Usage: npm run db:seed            (SEED_SCALE=5000 npm run db:seed for the performance test)
+ * Refuses to run in production (see assertDemoSeedAllowed) unless ALLOW_DEMO_SEED=true.
  */
 import { randomUUID } from "node:crypto";
 import { faker } from "@faker-js/faker";
@@ -1045,7 +1046,28 @@ async function syncSequences(): Promise<void> {
   }
 }
 
+/**
+ * The seed wipes every table, so it refuses to run against production (NODE_ENV, Vercel or a Neon host)
+ * unless ALLOW_DEMO_SEED=true is set explicitly. Called first in main(), before any delete.
+ */
+function assertDemoSeedAllowed(): void {
+  if (process.env.ALLOW_DEMO_SEED === "true") return;
+  let host = "";
+  try {
+    host = new URL(process.env.DATABASE_URL ?? "").hostname;
+  } catch {
+    // Missing or unparseable URL: the host check simply does not match.
+  }
+  const production =
+    process.env.NODE_ENV === "production" || process.env.VERCEL !== undefined || host.endsWith("neon.tech");
+  if (production) {
+    console.error("Refusing to wipe a production database. Set ALLOW_DEMO_SEED=true to force.");
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  assertDemoSeedAllowed();
   faker.seed(20261031);
   console.log("Seeding Brightloop demo data...");
 
