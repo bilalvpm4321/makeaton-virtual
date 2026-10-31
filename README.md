@@ -96,11 +96,13 @@ Set these in Vercel for the **Production** environment. The full list with comme
 | `DATABASE_URL` | Yes | Pooled Neon connection string (host contains `-pooler`) used by the app. |
 | `DATABASE_URL_UNPOOLED` | Yes | Direct Neon connection string used by `prisma migrate deploy` in the build. |
 | `SESSION_SECRET` | Yes | Signs session cookies. At least 32 random characters (`openssl rand -hex 32`). |
-| `APP_URL` | Yes | Public base URL, `https://makeaton-virtual.vercel.app`. Used in email links and the GitHub callback. |
+| `APP_URL` | Yes | Public base URL, `https://makeaton-virtual.vercel.app`. Used in email links and to check the origin of sign-in requests. |
 | `CRON_SECRET` | Yes | Authorises the billing cron. Vercel Cron sends it as a Bearer token. |
 | `CURRENCY` | No | Display currency. Default `INR`. |
-| `GITHUB_CLIENT_ID` | For GitHub sign-in | Client ID of the GitHub OAuth App. |
-| `GITHUB_CLIENT_SECRET` | For GitHub sign-in | Client secret of the GitHub OAuth App. |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | For Google sign-in | Firebase web API key. Public; embedded at build time. |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | No | Firebase auth domain. Defaults to `<project-id>.firebaseapp.com`. |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | For Google sign-in | Firebase project ID. The server checks ID tokens against it. |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | No | Firebase web app ID. |
 | `RESEND_API_KEY` | For email | Resend API key used to send emails. |
 | `MAIL_FROM` | For email | Sender address, for example `Brightloop <billing@your-domain.com>`. The domain must be verified in Resend. |
 | `MAIL_REPLY_TO` | No | Reply-to address for emails. |
@@ -128,12 +130,13 @@ Set these in Vercel for the **Production** environment. The full list with comme
 
    The command is idempotent and deletes nothing. It creates the admin, adds the default taxes and payment terms only if those tables are empty, and creates the sequences if they are missing. Running it again changes nothing. Remove `.env.production.local` when you are done. It is gitignored, but it holds secrets.
 
-### GitHub sign-in
+### Google sign-in (Firebase)
 
-1. In GitHub, open **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Set **Homepage URL** to `https://makeaton-virtual.vercel.app`.
-3. Set **Authorization callback URL** to `https://makeaton-virtual.vercel.app/api/auth/github/callback`. A GitHub OAuth App accepts one callback URL, so create a separate OAuth App for local development with `http://localhost:3000/api/auth/github/callback`.
-4. Generate a client secret. Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in Vercel for Production, then redeploy.
+1. In the [Firebase console](https://console.firebase.google.com), create a project, or open an existing one.
+2. Open **Authentication → Sign-in method**, enable **Google** and save.
+3. Open **Authentication → Settings → Authorized domains** and add `makeaton-virtual.vercel.app`. `localhost` is authorized by default, so local development works without changes.
+4. Open **Project settings → General → Your apps**, add a **Web app**, and copy `apiKey`, `authDomain`, `projectId` and `appId` from the config object.
+5. In Vercel, set `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` and `NEXT_PUBLIC_FIREBASE_APP_ID` for Production, then redeploy. These values are embedded at build time, so any change needs a new build. The "Continue with Google" button appears once the API key and project ID are set.
 
 ### Email (Resend)
 
