@@ -41,9 +41,24 @@ export async function POST(req: NextRequest) {
     runDate = d;
   }
 
+  return run(runDate);
+}
+
+/** Vercel Cron entry point (see vercel.json). Vercel sends `Authorization: Bearer $CRON_SECRET`. */
+export async function GET(req: NextRequest) {
+  const expected = process.env.CRON_SECRET;
+  const auth = req.headers.get("authorization");
+  const provided = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!expected || !secretMatches(provided, expected)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return run(today());
+}
+
+async function run(runDate: Date) {
   try {
-    const run = await runBilling(runDate, "cron");
-    return NextResponse.json(run);
+    const result = await runBilling(runDate, "cron");
+    return NextResponse.json(result);
   } catch (err) {
     console.error("cron billing failed", err);
     return NextResponse.json({ error: "Billing run failed." }, { status: 500 });
