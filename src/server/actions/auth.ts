@@ -1,6 +1,7 @@
 "use server";
 
 import { createHash, randomBytes } from "node:crypto";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/auth/password";
 import type { Role } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/db";
+import { passwordResetEmail, welcomeEmail } from "@/lib/email/templates";
 import { sendMail } from "@/lib/mail";
 
 const DUPLICATE_EMAIL = "An account with this email already exists.";
@@ -87,14 +89,6 @@ function appUrl(): string {
   return process.env.APP_URL ?? "http://localhost:3000";
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function isUniqueViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
 }
@@ -137,6 +131,10 @@ export async function signup(_prev: ActionState, formData: FormData): Promise<Ac
     if (isUniqueViolation(err)) return { error: DUPLICATE_EMAIL };
     throw err;
   }
+
+  // After the response, so a slow or failing mail provider never delays or fails sign-up.
+  const welcome = welcomeEmail({ name, loginUrl: `${appUrl()}/login` });
+  after(() => sendMail({ to: email, ...welcome }));
 
   redirect("/portal");
 }
@@ -190,12 +188,8 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
         expiresAt: new Date(Date.now() + RESET_TTL_MS),
       },
     });
-    const link = `${appUrl()}/reset-password?token=${raw}`;
-    await sendMail({
-      to: user.email,
-      subject: "Reset your Brightloop password",
-      html: `<p>Hi ${escapeHtml(user.name)},</p><p>We received a request to reset your Brightloop password. The link below works for one hour.</p><p><a href="${escapeHtml(link)}">Reset your password</a></p><p>If you did not ask for this, you can ignore this email.</p>`,
-    });
+    const reset = passwordResetEmail({ name: user.name, url: `${appUrl()}/reset-password?token=${raw}` });
+    await sendMail({ to: user.email, ...reset });
   }
 
   return { success: GENERIC_SENT };

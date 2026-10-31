@@ -6,9 +6,8 @@ import { logActivity } from "@/lib/activity";
 import type { ActionState } from "@/lib/action-state";
 import { requirePermission } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
-import { formatDate } from "@/lib/dates";
+import { invoiceEmail } from "@/lib/email/templates";
 import { sendMail } from "@/lib/mail";
-import { formatMoney } from "@/lib/money";
 
 // Invoice lifecycle actions (PLAN.md §6.8). Each one: permission first, zod second, one transaction, Activity row.
 
@@ -35,10 +34,6 @@ function revalidateInvoice(invoiceId: string) {
   revalidatePath("/invoices");
   revalidatePath("/payments");
   revalidatePath("/dashboard");
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 export async function confirmInvoice(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -156,22 +151,16 @@ export async function sendInvoice(_prev: ActionState, formData: FormData): Promi
       });
     });
 
-    const amountDue = inv.total - inv.amountPaid;
-    const link = `${process.env.APP_URL ?? "http://localhost:3000"}/portal/invoices/${invoiceId}`;
-    await sendMail({
-      to,
-      subject: `Invoice ${inv.number} from Brightloop`,
-      html: `<p>Hi ${escapeHtml(inv.customer.name)},</p>
-<p>Invoice ${escapeHtml(inv.number)} is ready.</p>
-<ul>
-<li>Issued: ${formatDate(inv.issueDate)}</li>
-<li>Due: ${formatDate(inv.dueDate)}</li>
-<li>Total: ${formatMoney(inv.total)}</li>
-<li>Amount due: ${amountDue > 0 ? formatMoney(amountDue) : "Paid in full"}</li>
-</ul>
-<p><a href="${link}">View invoice</a></p>
-<p>Pay by bank transfer and quote the invoice number.</p>`,
+    const mail = invoiceEmail({
+      customerName: inv.customer.name,
+      number: inv.number,
+      issueDate: inv.issueDate,
+      dueDate: inv.dueDate,
+      total: inv.total,
+      amountDue: inv.total - inv.amountPaid,
+      url: `${process.env.APP_URL ?? "http://localhost:3000"}/portal/invoices/${invoiceId}`,
     });
+    await sendMail({ to, ...mail });
 
     revalidateInvoice(invoiceId);
     return { success: `Invoice sent to ${to}.` };

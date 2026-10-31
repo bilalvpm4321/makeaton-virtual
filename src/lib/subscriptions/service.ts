@@ -4,6 +4,7 @@ import { logActivity } from "@/lib/activity";
 import { prisma } from "@/lib/db";
 import { expiryFor, periodStart } from "@/lib/billing/period";
 import { formatDate, today } from "@/lib/dates";
+import { quotationEmail } from "@/lib/email/templates";
 import { sendMail } from "@/lib/mail";
 import {
   ACTION_LABELS,
@@ -20,14 +21,6 @@ const STATUS_LABEL: Record<SubStatus, string> = {
   PAUSED: "Paused",
   CLOSED: "Closed",
 };
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 /** Recomputes Subscription.recurringTotal = sum(quantity * unitPrice) over its lines. Call after any line change. */
 export async function recomputeRecurringTotal(
@@ -53,7 +46,7 @@ export async function transitionSubscription(
   opts: { reason?: string } = {},
 ): Promise<void> {
   const todayDate = today();
-  let quoteEmail: { to: string; subject: string; html: string } | null = null;
+  let quoteEmail: { to: string; subject: string; html: string; text: string } | null = null;
 
   await prisma.$transaction(async (tx) => {
     const sub = await tx.subscription.findUnique({
@@ -160,12 +153,15 @@ export async function transitionSubscription(
     });
 
     if (action === "SEND_QUOTE") {
-      const link = `${process.env.APP_URL ?? "http://localhost:3000"}/portal/subscriptions/${sub.id}`;
-      quoteEmail = {
-        to: sub.customer.email,
-        subject: `Quotation ${sub.number} from Brightloop`,
-        html: `<p>Hi ${escapeHtml(sub.customer.name)},</p><p>Your quotation ${escapeHtml(sub.number)} is ready.</p><p><a href="${link}">View and accept your quotation</a></p>`,
-      };
+      const mail = quotationEmail({
+        customerName: sub.customer.name,
+        number: sub.number,
+        planName: sub.plan.name,
+        total: sub.recurringTotal,
+        validUntil: sub.validUntil,
+        url: `${process.env.APP_URL ?? "http://localhost:3000"}/portal/subscriptions/${sub.id}`,
+      });
+      quoteEmail = { to: sub.customer.email, ...mail };
     }
   });
 
