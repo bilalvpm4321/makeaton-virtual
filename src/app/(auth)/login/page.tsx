@@ -45,18 +45,20 @@ export default async function LoginPage({
         </Link>
       </p>
 
-      <div className="mt-6 rounded-lg border border-dashed border-border bg-subtle p-3 text-xs text-muted-foreground">
-        <p className="mb-1.5 font-medium text-foreground">Demo accounts</p>
-        <ul className="space-y-1">
-          {DEMO_ACCOUNTS.map((account) => (
-            <li key={account.email} className="flex flex-wrap gap-x-2">
-              <span className="w-16 shrink-0 font-medium text-foreground">{account.role}</span>
-              <span className="num">{account.email}</span>
-              <span className="num">{account.password}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {process.env.SHOW_DEMO_LOGINS === "true" ? (
+        <div className="mt-6 rounded-lg border border-dashed border-border bg-subtle p-3 text-xs text-muted-foreground">
+          <p className="mb-1.5 font-medium text-foreground">Demo accounts</p>
+          <ul className="space-y-1">
+            {DEMO_ACCOUNTS.map((account) => (
+              <li key={account.email} className="flex flex-wrap gap-x-2">
+                <span className="w-16 shrink-0 font-medium text-foreground">{account.role}</span>
+                <span className="num">{account.email}</span>
+                <span className="num">{account.password}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
