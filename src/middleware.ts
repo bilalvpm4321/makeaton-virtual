@@ -32,7 +32,7 @@ function homeFor(role: Role): string {
 
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  // OAuth start and callback run before a session exists, so the whole /api/auth tree is public.
+  // Sign-in endpoints run before a session exists, so the whole /api/auth tree is public.
   if (matchesPrefix(pathname, "/api/auth")) return NextResponse.next();
 
   const token = req.cookies.get(SESSION_COOKIE)?.value;
