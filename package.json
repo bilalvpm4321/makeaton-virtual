@@ -15,7 +15,8 @@
     "db:bootstrap": "tsx prisma/bootstrap.ts",
     "db:reset": "prisma migrate reset --force",
     "billing:run": "tsx scripts/run-billing.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:sample": "tsx prisma/sample-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
