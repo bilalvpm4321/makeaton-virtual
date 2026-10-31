@@ -50,7 +50,7 @@ export default async function HomePage() {
             Log in
           </Link>
           <Link href="/signup" className={buttonVariants({ variant: "default" })}>
-            Get started
+            Sign up
           </Link>
         </nav>
       </header>
