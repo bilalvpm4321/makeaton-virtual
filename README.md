@@ -44,7 +44,7 @@ Business rules that matter:
 
 ## Setup
 
-Requirements: Node.js 20 or later, npm, and Docker (or any PostgreSQL 16 database).
+Requirements: Node.js 20.12 or later, npm, and Docker (or any PostgreSQL 16 database).
 
 ```bash
 docker compose up -d          # PostgreSQL 16 on localhost:5432
