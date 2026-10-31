@@ -81,6 +81,8 @@ export default function GlobalError({
             </p>
           ) : null}
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
+            {/* A full reload is intended here: the root layout itself has failed. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/" style={secondaryLink}>
               Go home
             </a>
