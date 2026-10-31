@@ -65,8 +65,8 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique // always stored lowercased + trimmed
   name         String
-  passwordHash String // GitHub-only accounts get a random unusable hash
-  githubId     String?  @unique
+  passwordHash String // Google-only accounts get a random unusable hash
+  firebaseUid  String?  @unique // Firebase Auth uid of the linked Google account
   avatarUrl    String?
   role         Role     @default(CUSTOMER)
   isActive     Boolean  @default(true)

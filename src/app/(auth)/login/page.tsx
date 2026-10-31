@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AuthErrorBanner, GithubSignIn } from "../_components/github-sign-in";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Log in · Brightloop" };
@@ -13,13 +12,10 @@ const DEMO_ACCOUNTS = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reset?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; reset?: string }>;
 }) {
-  const { next, reset, error } = await searchParams;
+  const { next, reset } = await searchParams;
   const nextPath = typeof next === "string" ? next : undefined;
-  const githubHref = nextPath
-    ? `/api/auth/github?next=${encodeURIComponent(nextPath)}`
-    : "/api/auth/github";
 
   return (
     <div>
@@ -31,10 +27,6 @@ export default async function LoginPage({
           Your password has been updated. Log in with your new password.
         </p>
       ) : null}
-
-      <AuthErrorBanner code={typeof error === "string" ? error : undefined} />
-
-      {process.env.GITHUB_CLIENT_ID ? <GithubSignIn href={githubHref} /> : null}
 
       <LoginForm next={nextPath} />
 

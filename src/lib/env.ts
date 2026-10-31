@@ -19,8 +19,10 @@ const envSchema = z.object({
   CRON_SECRET: optionalString,
   RESEND_API_KEY: optionalString,
   MAIL_FROM: optionalString,
-  GITHUB_CLIENT_ID: optionalString,
-  GITHUB_CLIENT_SECRET: optionalString,
+  NEXT_PUBLIC_FIREBASE_API_KEY: optionalString,
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: optionalString,
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: optionalString,
+  NEXT_PUBLIC_FIREBASE_APP_ID: optionalString,
   ADMIN_EMAIL: optionalString,
 });
 
@@ -46,7 +48,7 @@ const isSet = (value: string | undefined) => Boolean(value && value.trim());
 
 /**
  * Booleans only, safe to expose on /api/health. Never throws and never returns a value.
- * Email and GitHub are "configured" when every variable they need is present.
+ * Email and Google sign-in are "configured" when every variable they need is present.
  */
 export function envStatus(): {
   database: boolean;
@@ -54,7 +56,7 @@ export function envStatus(): {
   appUrl: boolean;
   cron: boolean;
   email: boolean;
-  github: boolean;
+  google: boolean;
 } {
   const env = process.env;
   return {
@@ -63,6 +65,6 @@ export function envStatus(): {
     appUrl: z.url().safeParse(env.APP_URL).success,
     cron: isSet(env.CRON_SECRET),
     email: isSet(env.RESEND_API_KEY) && isSet(env.MAIL_FROM),
-    github: isSet(env.GITHUB_CLIENT_ID) && isSet(env.GITHUB_CLIENT_SECRET),
+    google: isSet(env.NEXT_PUBLIC_FIREBASE_API_KEY) && isSet(env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
   };
 }
