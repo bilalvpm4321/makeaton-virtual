@@ -213,7 +213,8 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
       },
     });
     const reset = passwordResetEmail({ name: user.name, url: `${appUrl()}/reset-password?token=${raw}` });
-    await sendMail({ to: user.email, ...reset });
+    // Sent after the response so existing and unknown emails take the same time to answer.
+    after(() => sendMail({ to: user.email, ...reset }));
   }
 
   return { success: GENERIC_SENT };
