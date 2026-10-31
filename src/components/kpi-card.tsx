@@ -1,12 +1,14 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { LucideIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const TONE_CLASS = {
-  default: "text-neutral-900",
-  success: "text-green-700",
-  warning: "text-amber-700",
-  danger: "text-red-700",
+const TONE_CHIP = {
+  default: "bg-primary/10 text-primary",
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-danger/10 text-danger",
 } as const;
 
 export function KpiCard({
@@ -14,21 +16,36 @@ export function KpiCard({
   value,
   hint,
   tone = "default",
+  icon: Icon,
+  href,
 }: {
   label: ReactNode;
   value: ReactNode;
   hint?: ReactNode;
-  tone?: keyof typeof TONE_CLASS;
+  tone?: keyof typeof TONE_CHIP;
+  icon?: LucideIcon;
+  href?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-1">
-        <div className={cn("text-2xl font-semibold tabular-nums", TONE_CLASS[tone])}>{value}</div>
-        {hint ? <div className="text-xs text-neutral-500">{hint}</div> : null}
-      </CardContent>
+    <Card className={cn("group relative overflow-hidden p-5 transition-colors", href && "hover:border-primary/30")}>
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
+        {Icon ? (
+          <span className={cn("grid size-8 place-items-center rounded-lg", TONE_CHIP[tone])}>
+            <Icon className="size-4" />
+          </span>
+        ) : null}
+      </div>
+      <div
+        className={cn(
+          "num mt-3 text-[26px] font-semibold leading-none tracking-tight",
+          tone === "danger" && "text-danger",
+        )}
+      >
+        {value}
+      </div>
+      {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
+      {href ? <Link href={href} className="absolute inset-0" aria-label={typeof label === "string" ? label : undefined} /> : null}
     </Card>
   );
 }
