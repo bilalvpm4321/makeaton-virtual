@@ -18,12 +18,15 @@ import type { Role } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/db";
 import { passwordResetEmail, welcomeEmail } from "@/lib/email/templates";
 import { sendMail } from "@/lib/mail";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const DUPLICATE_EMAIL = "An account with this email already exists.";
 const INVALID_LOGIN = "Invalid email or password.";
 const INVALID_RESET = "This link is invalid or has expired.";
 const GENERIC_SENT = "If an account exists, we've sent a reset link.";
 const RESET_TTL_MS = 60 * 60 * 1000;
+const WINDOW_15_MIN_S = 15 * 60;
+const WINDOW_HOUR_S = 60 * 60;
 
 const emailField = z
   .string()
@@ -89,6 +92,11 @@ function appUrl(): string {
   return process.env.APP_URL ?? "http://localhost:3000";
 }
 
+function tooManyAttempts(retryAfterSeconds: number): ActionState {
+  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+  return { error: `Too many attempts. Try again in ${minutes} ${minutes === 1 ? "minute" : "minutes"}.` };
+}
+
 function isUniqueViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
 }
@@ -107,6 +115,9 @@ export async function signup(_prev: ActionState, formData: FormData): Promise<Ac
 
   const email = normalizeEmail(parsed.data.email);
   const { name, password } = parsed.data;
+
+  const ipLimit = await rateLimit(`signup:ip:${await clientIp()}`, 5, WINDOW_HOUR_S);
+  if (!ipLimit.allowed) return tooManyAttempts(ipLimit.retryAfterSeconds);
 
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) return { error: DUPLICATE_EMAIL };
@@ -150,6 +161,12 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
   }
 
   const email = normalizeEmail(parsed.data.email);
+
+  const ipLimit = await rateLimit(`login:ip:${await clientIp()}`, 10, WINDOW_15_MIN_S);
+  if (!ipLimit.allowed) return tooManyAttempts(ipLimit.retryAfterSeconds);
+  const emailLimit = await rateLimit(`login:email:${email}`, 5, WINDOW_15_MIN_S);
+  if (!emailLimit.allowed) return tooManyAttempts(emailLimit.retryAfterSeconds);
+
   const user = await prisma.user.findUnique({
     where: { email },
     select: { id: true, role: true, passwordHash: true, isActive: true },
@@ -174,6 +191,13 @@ export async function requestPasswordReset(_prev: ActionState, formData: FormDat
   }
 
   const email = normalizeEmail(parsed.data.email);
+
+  // Over the limit, answer exactly as a normal request would, so limits never reveal whether an account exists.
+  const ipLimit = await rateLimit(`forgot:ip:${await clientIp()}`, 5, WINDOW_HOUR_S);
+  if (!ipLimit.allowed) return { success: GENERIC_SENT };
+  const emailLimit = await rateLimit(`forgot:email:${email}`, 3, WINDOW_HOUR_S);
+  if (!emailLimit.allowed) return { success: GENERIC_SENT };
+
   const user = await prisma.user.findUnique({
     where: { email },
     select: { id: true, email: true, name: true },
@@ -205,6 +229,10 @@ export async function resetPassword(_prev: ActionState, formData: FormData): Pro
   if (!parsed.success) {
     return { error: "Please fix the highlighted fields.", fieldErrors: fieldErrorsFrom(parsed.error) };
   }
+
+  const ipLimit = await rateLimit(`reset:ip:${await clientIp()}`, 10, WINDOW_HOUR_S);
+  if (!ipLimit.allowed) return tooManyAttempts(ipLimit.retryAfterSeconds);
+
   if (!parsed.data.token) return { error: INVALID_RESET };
 
   const record = await prisma.passwordResetToken.findUnique({
