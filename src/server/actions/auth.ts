@@ -81,6 +81,8 @@ function homeFor(role: Role): string {
 /** Only same-site relative paths. Blocks protocol-relative and absolute URLs (open redirect). */
 function safeNext(value: string): string | null {
   if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return null;
+  // Browsers strip tabs and newlines from URLs, so "/\t/host" would become a protocol-relative redirect.
+  if (/[\\\s\u0000-\u001f\u007f]/.test(value)) return null;
   return value;
 }
 
